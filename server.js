@@ -35,7 +35,7 @@ app.post('/api/products', (req, res) => {
   const query = 'INSERT INTO products (name, price, description, imageUrl, category) VALUES (?, ?, ?, ?, ?)';
   db.query(query, [product.name, product.price, product.description, product.imageUrl, product.category], (err, result) => {
     if (err) {
-      console.error('Error adding product:', err); // Log the error
+      console.error('Error adding product:', err);
       return res.status(500).send({ message: 'Failed to add product.', error: err });
     }
     res.status(201).send({ id: result.insertId, ...product });
@@ -47,7 +47,6 @@ app.put('/api/products/:id', (req, res) => {
   const { id } = req.params;
   const product = req.body;
 
-  // Validate the incoming data
   if (!product.name || !product.price || !product.description || !product.imageUrl || !product.category) {
     return res.status(400).send({ message: 'All fields are required.' });
   }
@@ -55,7 +54,7 @@ app.put('/api/products/:id', (req, res) => {
   const query = 'UPDATE products SET name = ?, price = ?, description = ?, imageUrl = ?, category = ? WHERE id = ?';
   db.query(query, [product.name, product.price, product.description, product.imageUrl, product.category, id], (err, result) => {
     if (err) {
-      console.error('Error updating product:', err); // Log the error
+      console.error('Error updating product:', err);
       return res.status(500).send({ message: 'Failed to update product.', error: err });
     }
     if (result.affectedRows === 0) {
@@ -71,7 +70,7 @@ app.delete('/api/products/:id', (req, res) => {
   const query = 'DELETE FROM products WHERE id = ?';
   db.query(query, [id], (err) => {
     if (err) {
-      console.error('Error deleting product:', err); // Log the error
+      console.error('Error deleting product:', err);
       return res.status(500).send({ message: 'Failed to delete product.', error: err });
     }
     res.sendStatus(204); // No content
@@ -83,7 +82,7 @@ app.get('/api/products', (req, res) => {
   const query = 'SELECT * FROM products';
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Error fetching products:', err); // Log the error
+      console.error('Error fetching products:', err);
       return res.status(500).send({ message: 'Failed to fetch products.', error: err });
     }
     res.send(results);
@@ -96,13 +95,56 @@ app.get('/api/products/:id', (req, res) => {
   const query = 'SELECT * FROM products WHERE id = ?';
   db.query(query, [id], (err, results) => {
     if (err) {
-      console.error('Error fetching product:', err); // Log the error
+      console.error('Error fetching product:', err);
       return res.status(500).send({ message: 'Failed to fetch product.', error: err });
     }
     if (results.length === 0) {
       return res.status(404).send({ message: 'Product not found' });
     }
     res.send(results[0]);
+  });
+});
+
+// Add a new purchase
+// Add a new purchase
+app.post('/api/purchases', (req, res) => {
+  const { userName, phone, location, paymentMethod, cart, totalAmount } = req.body;
+
+  if (!userName || !phone || !location || !paymentMethod || !cart || !totalAmount) {
+    return res.status(400).send({ message: 'All fields are required.' });
+  }
+
+  const query = 'INSERT INTO purchases (userName, productName, price, phone, location, paymentMethod, totalAmount) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [userName, cart[0].name, totalAmount, phone, location, paymentMethod, totalAmount], (err, result) => {
+    if (err) {
+      console.error('Error adding purchase:', err);
+      return res.status(500).send({ message: 'Failed to add purchase.', error: err });
+    }
+    res.status(201).send({ id: result.insertId, userName, productName: cart[0].name, price: totalAmount });
+  });
+});
+// Get all purchases
+app.get('/api/purchases', (req, res) => {
+  const query = 'SELECT * FROM purchases';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching purchases:', err);
+      return res.status(500).send({ message: 'Failed to fetch purchases.', error: err });
+    }
+    res.send(results);
+  });
+});
+
+// Delete a purchase
+app.delete('/api/purchases/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM purchases WHERE id = ?';
+  db.query(query, [id], (err) => {
+    if (err) {
+      console.error('Error deleting purchase:', err);
+      return res.status(500).send({ message: 'Failed to delete purchase.', error: err });
+    }
+    res.sendStatus(204); // No content
   });
 });
 
