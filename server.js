@@ -106,23 +106,38 @@ app.get('/api/products/:id', (req, res) => {
 });
 
 // Add a new purchase
-// Add a new purchase
 app.post('/api/purchases', (req, res) => {
-  const { userName, phone, location, paymentMethod, cart, totalAmount } = req.body;
+  const { userName, phone, location, paymentMethod, cart } = req.body;
 
-  if (!userName || !phone || !location || !paymentMethod || !cart || !totalAmount) {
-    return res.status(400).send({ message: 'All fields are required.' });
+  if (!userName || !phone || !location || !paymentMethod || !cart || !Array.isArray(cart) || cart.length === 0) {
+    return res.status(400).send({ message: 'Invalid purchase data. All fields and a valid cart are required.' });
   }
 
-  const query = 'INSERT INTO purchases (userName, productName, price, phone, location, paymentMethod, totalAmount) VALUES (?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [userName, cart[0].name, totalAmount, phone, location, paymentMethod, totalAmount], (err, result) => {
+  // Calculate the total amount dynamically
+  const totalAmount = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+
+  // Prepare query for batch insertion
+  const query = 'INSERT INTO purchases (userName, productName, price, phone, location, paymentMethod, totalAmount) VALUES ?';
+
+  const purchaseValues = cart.map((item) => [
+    userName,
+    item.name,
+    item.price * (item.quantity || 1),
+    phone,
+    location,
+    paymentMethod,
+    totalAmount
+  ]);
+
+  db.query(query, [purchaseValues], (err, result) => {
     if (err) {
       console.error('Error adding purchase:', err);
       return res.status(500).send({ message: 'Failed to add purchase.', error: err });
     }
-    res.status(201).send({ id: result.insertId, userName, productName: cart[0].name, price: totalAmount });
+    res.status(201).send({ message: 'Purchase successfully recorded.', purchaseId: result.insertId });
   });
 });
+
 // Get all purchases
 app.get('/api/purchases', (req, res) => {
   const query = 'SELECT * FROM purchases';
